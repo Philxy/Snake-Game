@@ -9,8 +9,8 @@ import java.util.List;
 
 public class Start {
 
-    static Snake snake1 = new Snake(2, 8, Direction.EAST,3, Color.YELLOWGREEN, Color.YELLOW);
-    static Snake snake2 = new Snake(14, 8, Direction.WEST,3, Color.BLUE, Color.AQUA);
+    static Snake snake1;
+    static Snake snake2;
 
     static Food food = new Food(8, 8);
 

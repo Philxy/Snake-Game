@@ -6,6 +6,7 @@ import javafx.scene.paint.Paint;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public class Snake {
 
@@ -14,6 +15,8 @@ public class Snake {
     private final Paint color;
     private final Paint headColor;
     private boolean outOfBounds;
+    private final int startLength;
+    private boolean firstStep;
 
     public void move() {
         final int headX = body.get(0).getX();
@@ -68,6 +71,7 @@ public class Snake {
             body.add(new BodyPart(lastX, lastY, color));
         }
 
+        firstStep = false;
     }
 
     /**
@@ -83,31 +87,20 @@ public class Snake {
     }
 
     /**
-     * Checks collision with itself or the border
+     * Checks collision with collidable objects
      */
     public boolean checkCollision() {
-        final int headX = body.get(0).getX();
-        final int headY = body.get(0).getY();
-        for (int i = 1; i < body.size(); i++) {
-            if (headX == body.get(i).getX() && headY == body.get(i).getY()) {
-                return true;
-            }
-        }
         if (outOfBounds) {
             return true;
         }
-        return false;
-    }
-
-    /**
-     * Checks collision with itself, the border or other snake
-     */
-    public boolean checkCollision(final Snake otherSnake) {
-        checkCollision();
-        final int headX = body.get(0).getX();
-        final int headY = body.get(0).getY();
-        for (int i = 0; i < otherSnake.body.size(); i++) {
-            if (headX == otherSnake.body.get(i).getX() && headY == otherSnake.body.get(i).getY()) {
+        if (firstStep) {
+            return false;
+        }
+        final BodyPart head = body.get(0);
+        final int headX = head.getX();
+        final int headY = head.getY();
+        for (Obj obj : Obj.objects) {
+            if (headX == obj.getX() && headY == obj.getY() && obj.isCollidable() && obj != head) {
                 return true;
             }
         }
@@ -123,27 +116,79 @@ public class Snake {
         for (Food foo : Food.foodList) {
             if (foo.getX() == headX && foo.getY() == headY) {
                 foo.placeRandom();
+                Food.foodEaten++;
+                Settings.delay = (long) (60 * Math.exp(-Food.foodEaten / 20f) + 40);
                 return true;
             }
         }
         return false;
     }
 
+    /**
+     * Resets snake to a given position and direction
+     */
+    public void reset(final int x, final int y, final Direction dir) {
+        for (BodyPart bp : body) {
+            body.remove(bp);
+            bp.remove();
+        }
+        this.body.add(new BodyPart(x, y, headColor, true));
+        for (int i = 1; i < startLength; i++) {
+            this.body.add(new BodyPart(body.get(0).getX(), body.get(0).getY(), color));
+        }
+        this.direction = dir;
+        this.firstStep = true;
+        this.outOfBounds = false;
+    }
+
+    /**
+     * Resets snake to a random position with random direction
+     */
+    public void resetRandom() {
+        for (BodyPart bp : body) {
+            body.remove(bp);
+            bp.remove();
+        }
+        this.body.add(new BodyPart(0, 0, headColor, true));
+        body.get(0).placeRandom();
+        for (int i = 1; i < startLength; i++) {
+            this.body.add(new BodyPart(body.get(0).getX(), body.get(0).getY(), color));
+        }
+        if (body.get(0).getX() < 3) {
+            this.direction = Direction.EAST;
+        } else if (body.get(0).getY() < 3) {
+            this.direction = Direction.SOUTH;
+        } else if (body.get(0).getX() > Settings.gridSize - 4) {
+            this.direction = Direction.WEST;
+        } else if (body.get(0).getY() > Settings.gridSize - 4) {
+            this.direction = Direction.NORTH;
+        } else {
+            int rand = (int) (Math.random() * 4);
+            if (rand == 0) {
+                this.direction = Direction.NORTH;
+            } else if (rand == 1) {
+                this.direction = Direction.EAST;
+            } else if (rand == 2) {
+                this.direction = Direction.SOUTH;
+            } else if (rand == 3) {
+                this.direction = Direction.WEST;
+            }
+        }
+        this.firstStep = true;
+        this.outOfBounds = false;
+    }
+
     public Snake(final int x, final int y, final Direction dir, final int startLength, final Color color, final Color headColor) {
         this.body = new ArrayList<>();
         this.body.add(new BodyPart(x, y, headColor, true));
         for (int i = 1; i < startLength; i++) {
-            this.body.add(new BodyPart(x, y, color));
+            this.body.add(new BodyPart(body.get(0).getX(), body.get(0).getY(), color));
         }
         this.direction = dir;
+        this.startLength = startLength;
         this.color = color;
         this.headColor = headColor;
+        this.firstStep = true;
         this.outOfBounds = false;
-
     }
-
-    public List<BodyPart> getBodyParts() {
-        return body;
-    }
-
 }
